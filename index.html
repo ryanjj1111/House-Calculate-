@@ -31,9 +31,10 @@
   .controls-panel { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; }
   .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
   .panel-title { font-size: 14px; font-weight: 700; color: #1e293b; }
-  
-  .lock-btn {
-    padding: 6px 14px;
+  .panel-btns { display: flex; gap: 6px; }
+
+  .lock-btn, .reset-btn {
+    padding: 6px 10px;
     font-size: 12px;
     font-weight: 600;
     border-radius: 20px;
@@ -44,6 +45,7 @@
     transition: all 0.2s ease;
     outline: none;
   }
+  .reset-btn:active { background: #e2e8f0; }
 
   .control-group { margin-bottom: 14px; }
   .control-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 4px; font-weight: 600; color: #475569; }
@@ -124,7 +126,10 @@
   <div class="controls-panel">
     <div class="panel-header">
       <span class="panel-title">🎛️ 參數調整</span>
-      <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓 全局未鎖定 (點擊鎖定)</button>
+      <div class="panel-btns">
+        <button class="reset-btn" onclick="resetDefaults()">↺ 重置預設</button>
+        <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓 全局未鎖定</button>
+      </div>
     </div>
 
     <div class="control-group">
@@ -285,6 +290,52 @@
 <script>
   let isLocked = false;
 
+  const defaultValues = {
+    current_value: "1450",
+    total_years: "10",
+    sell_year: "2",
+    house_growth: "2.0",
+    grace_period: "0",
+    mortgage_rate: "2.45",
+    monthly_rent: "32000",
+    monthly_mgmt: "2530",
+    monthly_maint: "0",
+    reinvest_rate: "5.0"
+  };
+
+  function saveSettings() {
+    const settings = {};
+    Object.keys(defaultValues).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) settings[id] = el.value;
+    });
+    localStorage.setItem('house_calc_user_settings', JSON.stringify(settings));
+  }
+
+  function loadSettings() {
+    const saved = localStorage.getItem('house_calc_user_settings');
+    if (saved) {
+      try {
+        const settings = JSON.parse(saved);
+        Object.keys(settings).forEach(id => {
+          const el = document.getElementById(id);
+          if (el && settings[id] !== undefined) el.value = settings[id];
+        });
+      } catch (e) {
+        console.error("載入本機設定失敗", e);
+      }
+    }
+  }
+
+  function resetDefaults() {
+    localStorage.removeItem('house_calc_user_settings');
+    Object.keys(defaultValues).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = defaultValues[id];
+    });
+    calculate();
+  }
+
   function toggleLock() {
     isLocked = !isLocked;
     const btn = document.getElementById('lockBtn');
@@ -292,14 +343,14 @@
     const singleBtns = document.querySelectorAll('.single-lock-btn');
 
     if (isLocked) {
-      btn.innerHTML = '🔒 全局已鎖定 (點擊解鎖)';
+      btn.innerHTML = '🔒 全局已鎖定';
       btn.style.background = '#ef4444';
       btn.style.color = '#ffffff';
       btn.style.borderColor = '#ef4444';
       inputs.forEach(input => input.disabled = true);
       singleBtns.forEach(b => b.innerHTML = '🔒');
     } else {
-      btn.innerHTML = '🔓 全局未鎖定 (點擊鎖定)';
+      btn.innerHTML = '🔓 全局未鎖定';
       btn.style.background = '#f8fafc';
       btn.style.color = '#475569';
       btn.style.borderColor = '#cbd5e1';
@@ -427,6 +478,7 @@
 
     renderTable(labels, houseVals, loanBalances, holdData, sellData);
     drawCanvas(labels, holdData, sellData);
+    saveSettings();
   }
 
   function renderTable(labels, houseVals, loanBalances, holdData, sellData) {
@@ -444,7 +496,7 @@
     tbody.innerHTML = html;
   }
 
-  function drawCanvas(labels, blueData, greenData) {
+ function drawCanvas(labels, blueData, greenData) {
     const canvas = document.getElementById('calcCanvas');
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -483,14 +535,18 @@
     bluePoints.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
     ctx.stroke();
 
-        ctx.beginPath(); ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 5]);
     greenPoints.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
     ctx.stroke(); ctx.setLineDash([]);
   }
 
   document.querySelectorAll('input[type=range]').forEach(input => input.addEventListener('input', calculate));
   window.addEventListener('resize', calculate); 
-  window.onload = calculate;
+  
+  window.onload = function() {
+    loadSettings();
+    calculate();
+  };
 </script>
 </body>
 </html>
