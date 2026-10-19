@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>台中南區房產售屋與出租動態試算器</title>
+<title>房產售屋與出租動態試算器</title>
 <style>
   * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   body { margin: 0; padding: 12px; background: #f5f7fa; color: #333; }
@@ -29,11 +29,51 @@
 
   /* 滑桿控制區 */
   .controls-panel { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; }
-  .control-group { margin-bottom: 12px; }
+  .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+  .panel-title { font-size: 14px; font-weight: 700; color: #1e293b; }
+  
+  .lock-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+
+  .control-group { margin-bottom: 14px; }
   .control-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; font-weight: 600; color: #475569; }
   .control-value { color: #2563eb; font-size: 14px; font-weight: 700; }
-  input[type=range] { width: 100%; height: 6px; background: #cbd5e1; border-radius: 3px; outline: none; -webkit-appearance: none; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #2563eb; cursor: pointer; }
+  
+  input[type=range] { 
+    width: 100%; 
+    height: 8px; 
+    background: #cbd5e1; 
+    border-radius: 4px; 
+    outline: none; 
+    -webkit-appearance: none; 
+    touch-action: pan-y; /* 告訴手機優先允許上下頁面滾動 */
+  }
+  input[type=range]::-webkit-slider-thumb { 
+    -webkit-appearance: none; 
+    width: 20px; 
+    height: 20px; 
+    border-radius: 50%; 
+    background: #2563eb; 
+    cursor: pointer; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  }
+  input[type=range]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  input[type=range]:disabled::-webkit-slider-thumb {
+    background: #94a3b8;
+  }
 
   /* 年度明細數據表 */
   .table-panel { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -50,7 +90,7 @@
 </head>
 <body>
 
-  <h2>房產售屋與出租試算器</h2>
+  <h2>台中南區房產售屋與出租試算器</h2>
 
   <!-- 頂部固定圖表區 -->
   <div class="sticky-chart">
@@ -73,6 +113,11 @@
 
   <!-- 控制面板 -->
   <div class="controls-panel">
+    <div class="panel-header">
+      <span class="panel-title">🎛️ 參數調整</span>
+      <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓 未鎖定 (點擊鎖定防誤觸)</button>
+    </div>
+
     <div class="control-group">
       <div class="control-header"><span>當前估值金額 (萬元)</span><span class="control-value" id="val_current">1450 萬</span></div>
       <input type="range" id="current_value" min="1200" max="2000" step="10" value="1450">
@@ -136,12 +181,33 @@
   </div>
 
 <script>
+  let isLocked = false;
+
+  function toggleLock() {
+    isLocked = !isLocked;
+    const btn = document.getElementById('lockBtn');
+    const inputs = document.querySelectorAll('input[type=range]');
+
+    if (isLocked) {
+      btn.innerHTML = '🔒 已鎖定 (點擊解鎖)';
+      btn.style.background = '#ef4444';
+      btn.style.color = '#ffffff';
+      btn.style.borderColor = '#ef4444';
+      inputs.forEach(input => input.disabled = true);
+    } else {
+      btn.innerHTML = '🔓 未鎖定 (點擊鎖定防誤觸)';
+      btn.style.background = '#f8fafc';
+      btn.style.color = '#475569';
+      btn.style.borderColor = '#cbd5e1';
+      inputs.forEach(input => input.disabled = false);
+    }
+  }
+
   function calculate() {
     const currentValue = parseFloat(document.getElementById('current_value').value);
     const totalYears = parseInt(document.getElementById('total_years').value);
     let sellYear = parseInt(document.getElementById('sell_year').value);
     
-    // 控制 sell_year 不超過 totalYears
     if (sellYear > totalYears) {
       sellYear = totalYears;
       document.getElementById('sell_year').value = sellYear;
@@ -153,7 +219,6 @@
     const monthlyRent = parseFloat(document.getElementById('monthly_rent').value);
     const reinvestRate = parseFloat(document.getElementById('reinvest_rate').value) / 100;
 
-    // UI 數值顯示
     document.getElementById('val_current').innerText = currentValue + ' 萬';
     document.getElementById('val_total_years').innerText = totalYears + ' 年';
     document.getElementById('val_sell').innerText = sellYear + ' 年後 (滿' + (sellYear+3) + '年)';
@@ -175,7 +240,7 @@
     const sellData = [];
 
     const monthlyTaxableRent = Math.max(0, monthlyRent - 15000);
-    const netRentMonthly = monthlyRent - (monthlyTaxableRent * 0.4 * 0.2) - 2530; // 元/月
+    const netRentMonthly = monthlyRent - (monthlyTaxableRent * 0.4 * 0.2) - 2530;
     const rMonthly = mortgageRate / 12;
     const graceMonths = gracePeriod * 12;
     const amortMonths = 360 - graceMonths;
@@ -184,14 +249,13 @@
       const houseVal = currentValue * Math.pow(1 + houseGrowth, t);
       houseVals.push(Math.round(houseVal * 10) / 10);
 
-      // 精算逐月房貸剩餘本金與累積現金支出
       let currentLoan = 992;
-      let cumulativeOutflow = 0; // 萬元
+      let cumulativeOutflow = 0;
 
       for (let m = 1; m <= t * 12; m++) {
         let payment = 0;
         if (m <= graceMonths) {
-          payment = 992 * rMonthly; // 寬限期只繳利息
+          payment = 992 * rMonthly;
         } else {
           let PMT = 992 * (rMonthly * Math.pow(1 + rMonthly, amortMonths)) / (Math.pow(1 + rMonthly, amortMonths) - 1);
           payment = PMT;
@@ -204,7 +268,6 @@
 
       loanBalances.push(Math.round(currentLoan * 10) / 10);
 
-      // 計算房地合一稅與過戶費用
       const brokerFee = houseVal * 0.03;
       const gain = houseVal - 1290 - Math.min(30, brokerFee);
       let taxRate = 0.35;
@@ -215,11 +278,9 @@
       const holdNetVal = houseVal - currentLoan - brokerFee - tax - cumulativeOutflow;
       holdData.push(Math.round(holdNetVal * 10) / 10);
 
-      // 計算賣房轉投資
       if (t <= sellYear) {
         sellData.push(Math.round(holdNetVal * 10) / 10);
       } else {
-        // 算出 sellYear 當下結算金額
         let sellLoan = 992;
         let sellOutflow = 0;
         for (let m = 1; m <= sellYear * 12; m++) {
