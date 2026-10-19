@@ -56,7 +56,7 @@
     border-radius: 4px; 
     outline: none; 
     -webkit-appearance: none; 
-    touch-action: pan-y; /* 告訴手機優先允許上下頁面滾動 */
+    touch-action: pan-y;
   }
   input[type=range]::-webkit-slider-thumb { 
     -webkit-appearance: none; 
@@ -101,11 +101,11 @@
     </div>
     <div class="summary-cards">
       <div class="card">
-        <div class="card-title" id="titleHold">10年出租淨資產</div>
+        <div class="card-title" id="titleHold">10年後出租總淨資產</div>
         <div class="card-value blue" id="sumHold">-- 萬</div>
       </div>
       <div class="card">
-        <div class="card-title" id="titleSell">賣房轉投資淨資產</div>
+        <div class="card-title" id="titleSell">第2年後賣房轉投資總淨資產</div>
         <div class="card-value green" id="sumSell">-- 萬</div>
       </div>
     </div>
@@ -228,8 +228,9 @@
     document.getElementById('val_rent').innerText = monthlyRent.toLocaleString() + ' 元';
     document.getElementById('val_reinvest').innerText = (reinvestRate * 100).toFixed(1) + ' %';
 
-    document.getElementById('titleHold').innerText = totalYears + '年後出租資產';
-    document.getElementById('titleSell').innerText = totalYears + '年後賣房轉投資';
+    // 依要求精確更新兩張卡片標題
+    document.getElementById('titleHold').innerText = totalYears + '年後出租總淨資產';
+    document.getElementById('titleSell').innerText = '第' + sellYear + '年後賣房轉投資總淨資產';
 
     const labels = ['目前'];
     for (let i = 1; i <= totalYears; i++) labels.push(i + '年');
