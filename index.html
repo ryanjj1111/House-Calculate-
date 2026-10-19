@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>房產售屋與出租動態試算器</title>
+<title>房產售屋與出租試算器</title>
 <style>
   * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   body { margin: 0; padding: 12px; background: #f5f7fa; color: #333; }
@@ -46,7 +46,9 @@
   }
 
   .control-group { margin-bottom: 14px; }
-  .control-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; font-weight: 600; color: #475569; }
+  .control-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 4px; font-weight: 600; color: #475569; }
+  .control-title-box { display: flex; align-items: center; gap: 4px; }
+  .single-lock-btn { border: none; background: transparent; font-size: 14px; cursor: pointer; padding: 0 2px; }
   .control-value { color: #2563eb; font-size: 14px; font-weight: 700; }
   
   input[type=range] { 
@@ -76,7 +78,7 @@
   }
 
   /* 年度明細數據表 */
-  .table-panel { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .table-panel { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; }
   .table-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 8px; text-align: center; }
   .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: right; white-space: nowrap; }
@@ -86,6 +88,13 @@
   tr:nth-child(even) { background: #f8fafc; }
   .txt-blue { color: #2563eb; font-weight: 600; }
   .txt-green { color: #16a34a; font-weight: 600; }
+
+  /* 底部固定預設說明卡片 */
+  .info-panel { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); font-size: 12px; color: #475569; line-height: 1.6; }
+  .info-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
+  .info-list { padding-left: 18px; margin: 0; }
+  .info-list li { margin-bottom: 8px; }
+  .info-list ul { padding-left: 16px; margin-top: 4px; margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -115,46 +124,116 @@
   <div class="controls-panel">
     <div class="panel-header">
       <span class="panel-title">🎛️ 參數調整</span>
-      <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓 未鎖定 (點擊鎖定防誤觸)</button>
+      <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓 全局未鎖定 (點擊鎖定)</button>
     </div>
 
     <div class="control-group">
-      <div class="control-header"><span>當前估值金額 (萬元)</span><span class="control-value" id="val_current">1450 萬</span></div>
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="current_value" onclick="toggleSingleLock(this)">🔓</button>
+          <span>當前估值金額 (萬元)</span>
+        </div>
+        <span class="control-value" id="val_current">1450 萬</span>
+      </div>
       <input type="range" id="current_value" min="1200" max="2000" step="10" value="1450">
     </div>
 
     <div class="control-group">
-      <div class="control-header"><span>總評估年數 (1～10年)</span><span class="control-value" id="val_total_years">10 年</span></div>
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="total_years" onclick="toggleSingleLock(this)">🔓</button>
+          <span>總評估年數 (1～10年)</span>
+        </div>
+        <span class="control-value" id="val_total_years">10 年</span>
+      </div>
       <input type="range" id="total_years" min="1" max="10" step="1" value="10">
     </div>
 
     <div class="control-group">
-      <div class="control-header"><span>預計第幾年賣房 (年後)</span><span class="control-value" id="val_sell">2 年後 (滿5年)</span></div>
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="sell_year" onclick="toggleSingleLock(this)">🔓</button>
+          <span>預計第幾年賣房 (年後)</span>
+        </div>
+        <span class="control-value" id="val_sell">2 年後 (滿5年)</span>
+      </div>
       <input type="range" id="sell_year" min="1" max="10" step="1" value="2">
     </div>
 
     <div class="control-group">
-      <div class="control-header"><span>預期房價年增率 (%)</span><span class="control-value" id="val_growth">2.0 %</span></div>
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="house_growth" onclick="toggleSingleLock(this)">🔓</button>
+          <span>預期房價年增率 (%)</span>
+        </div>
+        <span class="control-value" id="val_growth">2.0 %</span>
+      </div>
       <input type="range" id="house_growth" min="0" max="5" step="0.1" value="2.0">
     </div>
 
     <div class="control-group">
-      <div class="control-header"><span>房貸寬限期 (0～5年)</span><span class="control-value" id="val_grace">0 年</span></div>
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="grace_period" onclick="toggleSingleLock(this)">🔓</button>
+          <span>房貸寬限期 (0～5年)</span>
+        </div>
+        <span class="control-value" id="val_grace">0 年</span>
+      </div>
       <input type="range" id="grace_period" min="0" max="5" step="1" value="0">
     </div>
 
     <div class="control-group">
-      <div class="control-header"><span>一般房貸年利率 (%)</span><span class="control-value" id="val_rate">2.45 %</span></div>
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="mortgage_rate" onclick="toggleSingleLock(this)">🔓</button>
+          <span>一般房貸年利率 (%)</span>
+        </div>
+        <span class="control-value" id="val_rate">2.45 %</span>
+      </div>
       <input type="range" id="mortgage_rate" min="1.5" max="3.5" step="0.01" value="2.45">
     </div>
 
     <div class="control-group">
-      <div class="control-header"><span>每月租金收入 (元)</span><span class="control-value" id="val_rent">32,000 元</span></div>
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="monthly_rent" onclick="toggleSingleLock(this)">🔓</button>
+          <span>每月租金收入 (元)</span>
+        </div>
+        <span class="control-value" id="val_rent">32,000 元</span>
+      </div>
       <input type="range" id="monthly_rent" min="25000" max="45000" step="1000" value="32000">
     </div>
 
     <div class="control-group">
-      <div class="control-header"><span>賣房後轉投資報酬率 (%)</span><span class="control-value" id="val_reinvest">5.0 %</span></div>
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="monthly_mgmt" onclick="toggleSingleLock(this)">🔓</button>
+          <span>社區管理費 (元/月)</span>
+        </div>
+        <span class="control-value" id="val_mgmt">2,530 元</span>
+      </div>
+      <input type="range" id="monthly_mgmt" min="0" max="10000" step="100" value="2530">
+    </div>
+
+    <div class="control-group">
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="monthly_maint" onclick="toggleSingleLock(this)">🔓</button>
+          <span>出租雜支/修繕預備金 (元/月)</span>
+        </div>
+        <span class="control-value" id="val_maint">0 元</span>
+      </div>
+      <input type="range" id="monthly_maint" min="0" max="5000" step="100" value="0">
+    </div>
+
+    <div class="control-group">
+      <div class="control-header">
+        <div class="control-title-box">
+          <button class="single-lock-btn" data-target="reinvest_rate" onclick="toggleSingleLock(this)">🔓</button>
+          <span>賣房後轉投資報酬率 (%)</span>
+        </div>
+        <span class="control-value" id="val_reinvest">5.0 %</span>
+      </div>
       <input type="range" id="reinvest_rate" min="1" max="10" step="0.1" value="5.0">
     </div>
   </div>
@@ -180,6 +259,29 @@
     </div>
   </div>
 
+  <!-- 底部固定預設與稅費扣除說明卡片 -->
+  <div class="info-panel">
+    <div class="info-title">📋 系統預設參數與稅費扣除計算說明</div>
+    <ul class="info-list">
+      <li><strong>房屋與貸款基期數據：</strong>房屋原取得成本為 1,290 萬元；當前轉一般房貸剩餘本金為 992 萬元（貸款總期限以 30 年 360 期試算）。原屋持有基期預設為已滿 3 年。</li>
+      <li><strong>社會住宅包租代管節稅規則：</strong>
+        <ul>
+          <li>每月租金享 1.5 萬元免稅額。</li>
+          <li>超過 1.5 萬部分享 60% 法定必要費用扣除額。</li>
+          <li>淨租金所得併入個人綜合所得稅（本工具固定以 <strong>20% 綜所稅級距</strong> 精算預扣金額）。</li>
+        </ul>
+      </li>
+      <li><strong>房地合一稅率級距（包含已持有 3 年基期）：</strong>
+        <ul>
+          <li>第 1～2 年賣房（持有滿 3～5 年）：適用稅率 <strong>35%</strong></li>
+          <li>第 3～6 年賣房（持有滿 5～9 年）：適用稅率 <strong>20%</strong></li>
+          <li>第 7 年起賣房（持有滿 10 年以上）：適用稅率 <strong>15%</strong></li>
+        </ul>
+      </li>
+      <li><strong>售屋交易費用扣除：</strong>買賣仲介費與過戶雜費預設按售出房價 <strong>3%</strong> 扣除；獲利淨額按法定費用上限（預設 30 萬）計算房地合一稅金。</li>
+    </ul>
+  </div>
+
 <script>
   let isLocked = false;
 
@@ -187,20 +289,30 @@
     isLocked = !isLocked;
     const btn = document.getElementById('lockBtn');
     const inputs = document.querySelectorAll('input[type=range]');
+    const singleBtns = document.querySelectorAll('.single-lock-btn');
 
     if (isLocked) {
-      btn.innerHTML = '🔒 已鎖定 (點擊解鎖)';
+      btn.innerHTML = '🔒 全局已鎖定 (點擊解鎖)';
       btn.style.background = '#ef4444';
       btn.style.color = '#ffffff';
       btn.style.borderColor = '#ef4444';
       inputs.forEach(input => input.disabled = true);
+      singleBtns.forEach(b => b.innerHTML = '🔒');
     } else {
-      btn.innerHTML = '🔓 未鎖定 (點擊鎖定防誤觸)';
+      btn.innerHTML = '🔓 全局未鎖定 (點擊鎖定)';
       btn.style.background = '#f8fafc';
       btn.style.color = '#475569';
       btn.style.borderColor = '#cbd5e1';
       inputs.forEach(input => input.disabled = false);
+      singleBtns.forEach(b => b.innerHTML = '🔓');
     }
+  }
+
+  function toggleSingleLock(btn) {
+    const targetId = btn.getAttribute('data-target');
+    const input = document.getElementById(targetId);
+    input.disabled = !input.disabled;
+    btn.innerHTML = input.disabled ? '🔒' : '🔓';
   }
 
   function calculate() {
@@ -217,6 +329,8 @@
     const gracePeriod = parseInt(document.getElementById('grace_period').value);
     const mortgageRate = parseFloat(document.getElementById('mortgage_rate').value) / 100;
     const monthlyRent = parseFloat(document.getElementById('monthly_rent').value);
+    const monthlyMgmt = parseFloat(document.getElementById('monthly_mgmt').value);
+    const monthlyMaint = parseFloat(document.getElementById('monthly_maint').value);
     const reinvestRate = parseFloat(document.getElementById('reinvest_rate').value) / 100;
 
     document.getElementById('val_current').innerText = currentValue + ' 萬';
@@ -226,9 +340,10 @@
     document.getElementById('val_grace').innerText = gracePeriod + ' 年';
     document.getElementById('val_rate').innerText = (mortgageRate * 100).toFixed(2) + ' %';
     document.getElementById('val_rent').innerText = monthlyRent.toLocaleString() + ' 元';
+    document.getElementById('val_mgmt').innerText = monthlyMgmt.toLocaleString() + ' 元';
+    document.getElementById('val_maint').innerText = monthlyMaint.toLocaleString() + ' 元';
     document.getElementById('val_reinvest').innerText = (reinvestRate * 100).toFixed(1) + ' %';
 
-    // 依要求精確更新兩張卡片標題
     document.getElementById('titleHold').innerText = totalYears + '年後出租總淨資產';
     document.getElementById('titleSell').innerText = '第' + sellYear + '年後賣房轉投資總淨資產';
 
@@ -241,7 +356,9 @@
     const sellData = [];
 
     const monthlyTaxableRent = Math.max(0, monthlyRent - 15000);
-    const netRentMonthly = monthlyRent - (monthlyTaxableRent * 0.4 * 0.2) - 2530;
+    const taxCost = monthlyTaxableRent * 0.4 * 0.2;
+    const netRentMonthly = monthlyRent - taxCost - monthlyMgmt - monthlyMaint;
+
     const rMonthly = mortgageRate / 12;
     const graceMonths = gracePeriod * 12;
     const amortMonths = 360 - graceMonths;
@@ -366,14 +483,4 @@
     bluePoints.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
     ctx.stroke();
 
-    ctx.beginPath(); ctx.strokeStyle = '#16a34a'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 5]);
-    greenPoints.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
-    ctx.stroke(); ctx.setLineDash([]);
-  }
-
-  document.querySelectorAll('input[type=range]').forEach(input => input.addEventListener('input', calculate));
-  window.addEventListener('resize', calculate); 
-  window.onload = calculate;
-</script>
-</body>
-</html>
+    ctx.beginPath(); ctx
