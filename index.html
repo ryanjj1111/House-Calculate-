@@ -3,35 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>台中南區房產售屋與出租試算器</title>
+<title>台中南區房產售屋與出租動態試算器</title>
 <style>
   * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   body { margin: 0; padding: 12px; background: #f5f7fa; color: #333; }
   h2 { font-size: 18px; text-align: center; margin: 6px 0 10px; color: #1a202c; }
+  
+  /* 頂部固定圖表區 */
   .sticky-chart { position: sticky; top: 0; background: #fff; z-index: 100; border-radius: 12px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 12px; }
-  .chart-container { position: relative; height: 200px; width: 100%; }
+  .chart-container { position: relative; height: 190px; width: 100%; }
   canvas { width: 100%; height: 100%; display: block; }
+  
+  .legend { display: flex; justify-content: center; gap: 16px; font-size: 11px; margin-top: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.blue { background: #2563eb; }
+  .dot.green { background: #16a34a; }
+
   .summary-cards { display: flex; gap: 8px; margin-top: 8px; }
   .card { flex: 1; background: #f8fafc; border-radius: 8px; padding: 8px; text-align: center; border: 1px solid #e2e8f0; }
   .card-title { font-size: 11px; color: #64748b; }
   .card-value { font-size: 15px; font-weight: bold; margin-top: 2px; }
   .card-value.blue { color: #2563eb; }
   .card-value.green { color: #16a34a; }
-  .controls-panel { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+  /* 滑桿控制區 */
+  .controls-panel { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; }
   .control-group { margin-bottom: 12px; }
   .control-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; font-weight: 600; color: #475569; }
   .control-value { color: #2563eb; font-size: 14px; font-weight: 700; }
   input[type=range] { width: 100%; height: 6px; background: #cbd5e1; border-radius: 3px; outline: none; -webkit-appearance: none; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #2563eb; cursor: pointer; }
-  .legend { display: flex; justify-content: center; gap: 16px; font-size: 11px; margin-top: 4px; }
-  .legend-item { display: flex; align-items: center; gap: 4px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .dot.blue { background: #2563eb; }
-  .dot.green { background: #16a34a; }
+
+  /* 年度明細數據表 */
+  .table-panel { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .table-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 8px; text-align: center; }
+  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: right; white-space: nowrap; }
+  th { background: #f1f5f9; color: #475569; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid #cbd5e1; }
+  th:first-child, td:first-child { text-align: center; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .txt-blue { color: #2563eb; font-weight: 600; }
+  .txt-green { color: #16a34a; font-weight: 600; }
 </style>
 </head>
 <body>
-  <h2>台中南區房產售屋與出租試算器</h2>
+
+  <h2>房產售屋與出租試算器</h2>
+
+  <!-- 頂部固定圖表區 -->
   <div class="sticky-chart">
     <div class="chart-container"><canvas id="calcCanvas"></canvas></div>
     <div class="legend">
@@ -39,65 +60,151 @@
       <div class="legend-item"><span class="dot green"></span> 賣房轉投資總累積</div>
     </div>
     <div class="summary-cards">
-      <div class="card"><div class="card-title">7年後出租淨資產</div><div class="card-value blue" id="sumHold">-- 萬</div></div>
-      <div class="card"><div class="card-title">7年後賣房轉投資</div><div class="card-value green" id="sumSell">-- 萬</div></div>
+      <div class="card">
+        <div class="card-title" id="titleHold">10年後出租資產</div>
+        <div class="card-value blue" id="sumHold">-- 萬</div>
+      </div>
+      <div class="card">
+        <div class="card-title" id="titleSell">10年後賣房轉投資</div>
+        <div class="card-value green" id="sumSell">-- 萬</div>
+      </div>
     </div>
   </div>
+
+  <!-- 控制面板 -->
   <div class="controls-panel">
     <div class="control-group">
       <div class="control-header"><span>當前估值金額 (萬元)</span><span class="control-value" id="val_current">1450 萬</span></div>
       <input type="range" id="current_value" min="1200" max="2000" step="10" value="1450">
     </div>
+
+    <div class="control-group">
+      <div class="control-header"><span>總評估年數 (1～10年)</span><span class="control-value" id="val_total_years">10 年</span></div>
+      <input type="range" id="total_years" min="1" max="10" step="1" value="10">
+    </div>
+
     <div class="control-group">
       <div class="control-header"><span>預計第幾年賣房 (年後)</span><span class="control-value" id="val_sell">2 年後 (滿5年)</span></div>
-      <input type="range" id="sell_year" min="1" max="7" step="1" value="2">
+      <input type="range" id="sell_year" min="1" max="10" step="1" value="2">
     </div>
+
     <div class="control-group">
       <div class="control-header"><span>預期房價年增率 (%)</span><span class="control-value" id="val_growth">2.0 %</span></div>
-      <input type="range" id="house_growth" min="0" max="5" step="0.5" value="2">
+      <input type="range" id="house_growth" min="0" max="5" step="0.1" value="2.0">
     </div>
+
+    <div class="control-group">
+      <div class="control-header"><span>房貸寬限期 (0～5年)</span><span class="control-value" id="val_grace">0 年</span></div>
+      <input type="range" id="grace_period" min="0" max="5" step="1" value="0">
+    </div>
+
+    <div class="control-group">
+      <div class="control-header"><span>一般房貸年利率 (%)</span><span class="control-value" id="val_rate">2.45 %</span></div>
+      <input type="range" id="mortgage_rate" min="1.5" max="3.5" step="0.01" value="2.45">
+    </div>
+
     <div class="control-group">
       <div class="control-header"><span>每月租金收入 (元)</span><span class="control-value" id="val_rent">32,000 元</span></div>
       <input type="range" id="monthly_rent" min="25000" max="45000" step="1000" value="32000">
     </div>
-    <div class="control-group">
-      <div class="control-header"><span>一般房貸年利率 (%)</span><span class="control-value" id="val_rate">2.45 %</span></div>
-      <input type="range" id="mortgage_rate" min="1.8" max="3.5" step="0.05" value="2.45">
-    </div>
+
     <div class="control-group">
       <div class="control-header"><span>賣房後轉投資報酬率 (%)</span><span class="control-value" id="val_reinvest">5.0 %</span></div>
-      <input type="range" id="reinvest_rate" min="2" max="10" step="0.5" value="5">
+      <input type="range" id="reinvest_rate" min="1" max="10" step="0.1" value="5.0">
     </div>
   </div>
+
+  <!-- 年度明細數據表 -->
+  <div class="table-panel">
+    <div class="table-title">📊 歷年房價與資產明細表 (單位: 萬元)</div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>年份</th>
+            <th>預估房價</th>
+            <th>剩餘房貸</th>
+            <th>出租累積資產</th>
+            <th>賣房轉投資</th>
+          </tr>
+        </thead>
+        <tbody id="detailTableBody">
+          <!-- 動態渲染 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 <script>
   function calculate() {
     const currentValue = parseFloat(document.getElementById('current_value').value);
-    const sellYear = parseInt(document.getElementById('sell_year').value);
+    const totalYears = parseInt(document.getElementById('total_years').value);
+    let sellYear = parseInt(document.getElementById('sell_year').value);
+    
+    // 控制 sell_year 不超過 totalYears
+    if (sellYear > totalYears) {
+      sellYear = totalYears;
+      document.getElementById('sell_year').value = sellYear;
+    }
+
     const houseGrowth = parseFloat(document.getElementById('house_growth').value) / 100;
-    const monthlyRent = parseFloat(document.getElementById('monthly_rent').value);
+    const gracePeriod = parseInt(document.getElementById('grace_period').value);
     const mortgageRate = parseFloat(document.getElementById('mortgage_rate').value) / 100;
+    const monthlyRent = parseFloat(document.getElementById('monthly_rent').value);
     const reinvestRate = parseFloat(document.getElementById('reinvest_rate').value) / 100;
 
+    // UI 數值顯示
     document.getElementById('val_current').innerText = currentValue + ' 萬';
+    document.getElementById('val_total_years').innerText = totalYears + ' 年';
     document.getElementById('val_sell').innerText = sellYear + ' 年後 (滿' + (sellYear+3) + '年)';
     document.getElementById('val_growth').innerText = (houseGrowth * 100).toFixed(1) + ' %';
-    document.getElementById('val_rent').innerText = monthlyRent.toLocaleString() + ' 元';
+    document.getElementById('val_grace').innerText = gracePeriod + ' 年';
     document.getElementById('val_rate').innerText = (mortgageRate * 100).toFixed(2) + ' %';
+    document.getElementById('val_rent').innerText = monthlyRent.toLocaleString() + ' 元';
     document.getElementById('val_reinvest').innerText = (reinvestRate * 100).toFixed(1) + ' %';
 
-    const labels = ['目前', '1年', '2年', '3年', '4年', '5年', '6年', '7年'];
+    document.getElementById('titleHold').innerText = totalYears + '年後出租資產';
+    document.getElementById('titleSell').innerText = totalYears + '年後賣房轉投資';
+
+    const labels = ['目前'];
+    for (let i = 1; i <= totalYears; i++) labels.push(i + '年');
+
+    const houseVals = [];
+    const loanBalances = [];
     const holdData = [];
     const sellData = [];
 
     const monthlyTaxableRent = Math.max(0, monthlyRent - 15000);
-    const netRentMonthly = monthlyRent - (monthlyTaxableRent * 0.4 * 0.2) - 2530;
+    const netRentMonthly = monthlyRent - (monthlyTaxableRent * 0.4 * 0.2) - 2530; // 元/月
     const rMonthly = mortgageRate / 12;
-    const monthlyPayment = 992 * (rMonthly * Math.pow(1 + rMonthly, 360)) / (Math.pow(1 + rMonthly, 360) - 1);
-    const monthlyOutflow = monthlyPayment - (netRentMonthly / 10000);
+    const graceMonths = gracePeriod * 12;
+    const amortMonths = 360 - graceMonths;
 
-    for (let t = 0; t <= 7; t++) {
+    for (let t = 0; t <= totalYears; t++) {
       const houseVal = currentValue * Math.pow(1 + houseGrowth, t);
-      const remainingLoan = 992 - (22.44 * t);
+      houseVals.push(Math.round(houseVal * 10) / 10);
+
+      // 精算逐月房貸剩餘本金與累積現金支出
+      let currentLoan = 992;
+      let cumulativeOutflow = 0; // 萬元
+
+      for (let m = 1; m <= t * 12; m++) {
+        let payment = 0;
+        if (m <= graceMonths) {
+          payment = 992 * rMonthly; // 寬限期只繳利息
+        } else {
+          let PMT = 992 * (rMonthly * Math.pow(1 + rMonthly, amortMonths)) / (Math.pow(1 + rMonthly, amortMonths) - 1);
+          payment = PMT;
+          let interest = currentLoan * rMonthly;
+          let principal = payment - interest;
+          currentLoan -= principal;
+        }
+        cumulativeOutflow += (payment - (netRentMonthly / 10000));
+      }
+
+      loanBalances.push(Math.round(currentLoan * 10) / 10);
+
+      // 計算房地合一稅與過戶費用
       const brokerFee = houseVal * 0.03;
       const gain = houseVal - 1290 - Math.min(30, brokerFee);
       let taxRate = 0.35;
@@ -105,30 +212,57 @@
       if (t >= 7) taxRate = 0.15;
       const tax = Math.max(0, gain) * taxRate;
 
-      const holdNetVal = houseVal - remainingLoan - brokerFee - tax - (monthlyOutflow * 12 * t);
+      const holdNetVal = houseVal - currentLoan - brokerFee - tax - cumulativeOutflow;
       holdData.push(Math.round(holdNetVal * 10) / 10);
 
+      // 計算賣房轉投資
       if (t <= sellYear) {
         sellData.push(Math.round(holdNetVal * 10) / 10);
       } else {
+        // 算出 sellYear 當下結算金額
+        let sellLoan = 992;
+        let sellOutflow = 0;
+        for (let m = 1; m <= sellYear * 12; m++) {
+          let payment = (m <= graceMonths) ? (992 * rMonthly) : (992 * (rMonthly * Math.pow(1 + rMonthly, amortMonths)) / (Math.pow(1 + rMonthly, amortMonths) - 1));
+          if (m > graceMonths) {
+            let interest = sellLoan * rMonthly;
+            sellLoan -= (payment - interest);
+          }
+          sellOutflow += (payment - (netRentMonthly / 10000));
+        }
+
         const sellHouseVal = currentValue * Math.pow(1 + houseGrowth, sellYear);
-        const sellLoan = 992 - (22.44 * sellYear);
         const sellBrokerFee = sellHouseVal * 0.03;
         const sellGain = sellHouseVal - 1290 - Math.min(30, sellBrokerFee);
-        let sellTaxRate = 0.35;
-        if (sellYear >= 2 && sellYear < 7) sellTaxRate = 0.20;
-        if (sellYear >= 7) sellTaxRate = 0.15;
+        let sellTaxRate = (sellYear < 2) ? 0.35 : ((sellYear < 7) ? 0.20 : 0.15);
         const sellTax = Math.max(0, sellGain) * sellTaxRate;
 
         const netCashAtSell = sellHouseVal - sellLoan - sellBrokerFee - sellTax;
-        const reinvestVal = netCashAtSell * Math.pow(1 + reinvestRate, t - sellYear) - (monthlyOutflow * 12 * sellYear);
+        const reinvestVal = netCashAtSell * Math.pow(1 + reinvestRate, t - sellYear) - sellOutflow;
         sellData.push(Math.round(reinvestVal * 10) / 10);
       }
     }
 
-    document.getElementById('sumHold').innerText = holdData[7] + ' 萬';
-    document.getElementById('sumSell').innerText = sellData[7] + ' 萬';
+    document.getElementById('sumHold').innerText = holdData[totalYears] + ' 萬';
+    document.getElementById('sumSell').innerText = sellData[totalYears] + ' 萬';
+
+    renderTable(labels, houseVals, loanBalances, holdData, sellData);
     drawCanvas(labels, holdData, sellData);
+  }
+
+  function renderTable(labels, houseVals, loanBalances, holdData, sellData) {
+    const tbody = document.getElementById('detailTableBody');
+    let html = '';
+    for (let i = 0; i < labels.length; i++) {
+      html += `<tr>
+        <td>${labels[i]}</td>
+        <td>${houseVals[i]} 萬</td>
+        <td>${loanBalances[i]} 萬</td>
+        <td class="txt-blue">${holdData[i]} 萬</td>
+        <td class="txt-green">${sellData[i]} 萬</td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
   }
 
   function drawCanvas(labels, blueData, greenData) {
@@ -147,6 +281,7 @@
     const allVals = [...blueData, ...greenData];
     let minVal = Math.floor(Math.min(...allVals) / 50) * 50;
     let maxVal = Math.ceil(Math.max(...allVals) / 50) * 50;
+    if (minVal === maxVal) maxVal += 50;
 
     ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
     for (let i = 0; i <= 3; i++) {
@@ -175,7 +310,8 @@
   }
 
   document.querySelectorAll('input[type=range]').forEach(input => input.addEventListener('input', calculate));
-  window.addEventListener('resize', calculate); window.onload = calculate;
+  window.addEventListener('resize', calculate); 
+  window.onload = calculate;
 </script>
 </body>
 </html>
